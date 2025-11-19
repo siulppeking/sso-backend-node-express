@@ -1,0 +1,87 @@
+const { validationResult } = require('express-validator');
+const userService = require('../services/userService');
+const clientService = require('../services/clientService');
+const tokenService = require('../services/tokenService');
+const User = require('../models/User');
+
+async function register(req, res, next) {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+    const { username, email, password } = req.body;
+    const existing = await userService.findByEmail(email);
+    if (existing) return res.status(409).json({ message: 'Email already used' });
+
+    const user = await userService.createUser({ username, email, password });
+    return res.status(201).json({ id: user._id, username: user.username, email: user.email });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function login(req, res, next) {
+  try {
+    const { email, password, clientId, clientSecret } = req.body;
+    const user = await userService.findByEmail(email);
+    if (!user) return res.status(401).json({ message: 'Invalid credentials' });
+
+    const ok = await user.comparePassword(password);
+    if (!ok) return res.status(401).json({ message: 'Invalid credentials' });
+
+    let client = null;
+    if (clientId) {
+      client = await clientService.findByClientId(clientId);
+      if (!client) return res.status(400).json({ message: 'Invalid client' });
+      if (!client.public) {
+        const secretOk = await client.compareSecret(clientSecret || '');
+        if (!secretOk) return res.status(401).json({ message: 'Invalid client credentials' });
+      }
+    }
+
+    const accessToken = tokenService.generateAccessToken(user, client);
+    const refreshToken = await tokenService.generateRefreshToken(user, client);
+
+    return res.json({ accessToken, refreshToken, expiresIn: process.env.JWT_ACCESS_EXPIRES || '15m' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function refresh(req, res, next) {
+  try {
+    const { refreshToken: tokenValue } = req.body;
+    if (!tokenValue) return res.status(400).json({ message: 'refreshToken required' });
+
+    const stored = await tokenService.verifyRefreshToken(tokenValue);
+    if (!stored) return res.status(401).json({ message: 'Invalid refresh token' });
+
+    const user = stored.user;
+    const client = stored.client ? await clientService.findByClientId(stored.client.clientId) : null;
+
+    // rotate
+    const newRefresh = await tokenService.rotateRefreshToken(tokenValue, user, client);
+    const accessToken = tokenService.generateAccessToken(user, client);
+
+    return res.json({ accessToken, refreshToken: newRefresh });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function logout(req, res, next) {
+  try {
+    const { refreshToken } = req.body;
+    if (!refreshToken) return res.status(400).json({ message: 'refreshToken required' });
+    const stored = await tokenService.verifyRefreshToken(refreshToken);
+    if (stored) {
+      stored.revoked = true;
+      await stored.save();
+    }
+    return res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { register, login, refresh, logout };
