@@ -2,11 +2,19 @@ const express = require('express');
 const router = express.Router();
 const { authenticate } = require('../middlewares/authMiddleware');
 const { checkReportRole } = require('../middlewares/checkReportRole');
+const { requireAdmin } = require('../middlewares/adminMiddleware');
+const reportController = require('../controllers/reportController');
 
-// Example report endpoint protected by REPORT role
-router.get('/', authenticate, checkReportRole, async (req, res) => {
-  // In a real app you'd fetch and return reports for the requesting user
-  res.json({ message: 'Reports access granted', user: req.user });
-});
+// List reports (pagination, search, tag) - requires REPORT role
+router.get('/', authenticate, checkReportRole, reportController.listReports);
+
+// Get single report - requires REPORT role
+router.get('/:id', authenticate, checkReportRole, reportController.getReport);
+
+// Create report - requires REPORT role
+router.post('/', authenticate, checkReportRole, reportController.createReport);
+
+// Delete report - admin only
+router.delete('/:id', authenticate, requireAdmin, reportController.deleteReport);
 
 module.exports = router;
