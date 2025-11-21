@@ -13,7 +13,9 @@ const reportRoutes = require('./routes/reports');
 const roleRoutes = require('./routes/roles');
 const applicationRoutes = require('./routes/applications');
 const groupRoutes = require('./routes/groups');
+const emailTemplateRoutes = require('./routes/emailTemplates');
 const { errorHandler } = require('./middlewares/errorHandler');
+const emailService = require('./services/emailService');
 
 const app = express();
 app.use(cors());
@@ -28,13 +30,17 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/groups', groupRoutes);
+app.use('/api/admin/email-templates', emailTemplateRoutes);
 
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 4000;
 
 connectDB()
-  .then(() => {
+  .then(async () => {
+    // Initialize default email templates
+    await emailService.initializeDefaultTemplates();
+    
     app.listen(PORT, () => {
       console.log(`SSO server running on port ${PORT}`);
     });
