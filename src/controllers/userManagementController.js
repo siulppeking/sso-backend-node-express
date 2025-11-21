@@ -1,5 +1,6 @@
 const { validationResult } = require('express-validator');
 const userService = require('../services/userService');
+const emailService = require('../services/emailService');
 
 // User Management
 async function createUser(req, res, next) {
@@ -97,11 +98,11 @@ async function sendEmailVerification(req, res, next) {
     const { token, user } = await userService.generateEmailVerificationToken(id);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    // TODO: Send email with verification link
-    // For now, return token for testing
+    // Send email with verification link
+    await emailService.sendEmailVerificationEmail(user, token);
+    
     return res.json({
       message: 'Verification email sent',
-      verificationToken: token, // Only for development
     });
   } catch (err) {
     next(err);
@@ -134,10 +135,11 @@ async function requestPasswordReset(req, res, next) {
     const result = await userService.generatePasswordResetToken(email);
     if (!result) return res.status(404).json({ message: 'User not found' });
 
-    // TODO: Send email with reset link
+    // Send email with reset link
+    await emailService.sendPasswordResetEmail(result.user, result.token);
+    
     return res.json({
       message: 'Password reset email sent',
-      resetToken: result.token, // Only for development
     });
   } catch (err) {
     next(err);
@@ -153,6 +155,9 @@ async function resetPassword(req, res, next) {
 
     const user = await userService.resetPassword(token, newPassword);
     if (!user) return res.status(400).json({ message: 'Invalid or expired token' });
+
+    // Send confirmation email
+    await emailService.sendPasswordChangedEmail(user);
 
     return res.json({
       message: 'Password reset successfully',
@@ -175,6 +180,9 @@ async function changePassword(req, res, next) {
     if (result === false) return res.status(401).json({ message: 'Invalid current password' });
     if (!result) return res.status(404).json({ message: 'User not found' });
 
+    // Send confirmation email
+    await emailService.sendPasswordChangedEmail(result);
+
     return res.json({
       message: 'Password changed successfully',
       user: formatUserResponse(result),
@@ -190,6 +198,9 @@ async function enable2FA(req, res, next) {
     const userId = req.user.sub;
     const secret = userService.generate2FASecret();
     const { user, backupCodes } = await userService.enable2FA(userId, secret);
+
+    // Send confirmation email
+    await emailService.send2FAEnabledEmail(user);
 
     return res.json({
       message: '2FA enabled',
@@ -207,6 +218,9 @@ async function disable2FA(req, res, next) {
     const userId = req.user.sub;
     const user = await userService.disable2FA(userId);
     if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Send confirmation email
+    await emailService.send2FADisabledEmail(user);
 
     return res.json({
       message: '2FA disabled',
@@ -319,6 +333,9 @@ async function lockAccount(req, res, next) {
     const user = await userService.lockAccount(id, reason || '');
     if (!user) return res.status(404).json({ message: 'User not found' });
 
+    // Send notification email
+    await emailService.sendAccountLockedEmail(user, reason || '');
+
     return res.json({
       message: 'Account locked',
       user: formatUserResponse(user),
@@ -333,6 +350,9 @@ async function unlockAccount(req, res, next) {
     const { id } = req.params;
     const user = await userService.unlockAccount(id);
     if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Send notification email
+    await emailService.sendAccountUnlockedEmail(user);
 
     return res.json({
       message: 'Account unlocked',

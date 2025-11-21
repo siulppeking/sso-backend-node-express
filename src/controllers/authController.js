@@ -2,6 +2,7 @@ const { validationResult } = require('express-validator');
 const userService = require('../services/userService');
 const clientService = require('../services/clientService');
 const tokenService = require('../services/tokenService');
+const emailService = require('../services/emailService');
 const User = require('../models/User');
 
 async function register(req, res, next) {
@@ -14,6 +15,14 @@ async function register(req, res, next) {
     if (existing) return res.status(409).json({ message: 'Email already used' });
 
     const user = await userService.createUser({ username, email, password });
+    
+    // Send welcome email
+    await emailService.sendWelcomeEmail(user);
+    
+    // Generate and send email verification
+    const { token } = await userService.generateEmailVerificationToken(user._id);
+    await emailService.sendEmailVerificationEmail(user, token);
+    
     return res.status(201).json({ id: user._id, username: user.username, email: user.email });
   } catch (err) {
     next(err);
