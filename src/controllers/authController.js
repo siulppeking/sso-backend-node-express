@@ -24,10 +24,20 @@ async function login(req, res, next) {
   try {
     const { email, password, clientId, clientSecret } = req.body;
     const user = await userService.findByEmail(email);
-    if (!user) return res.status(401).json({ message: 'Invalid credentials' });
+    if (!user) {
+      await userService.recordLoginError(email, req.ip, req.get('user-agent'));
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    if (user.isAccountLocked()) {
+      return res.status(403).json({ message: 'Account is locked' });
+    }
 
     const ok = await user.comparePassword(password);
-    if (!ok) return res.status(401).json({ message: 'Invalid credentials' });
+    if (!ok) {
+      await userService.recordLoginError(email, req.ip, req.get('user-agent'));
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
 
     let client = null;
     if (clientId) {
@@ -38,6 +48,9 @@ async function login(req, res, next) {
         if (!secretOk) return res.status(401).json({ message: 'Invalid client credentials' });
       }
     }
+
+    // Record successful login
+    await userService.recordLogin(user._id, req.ip, req.get('user-agent'));
 
     const accessToken = tokenService.generateAccessToken(user, client);
     const refreshToken = await tokenService.generateRefreshToken(user, client);
@@ -77,6 +90,11 @@ async function logout(req, res, next) {
     if (stored) {
       stored.revoked = true;
       await stored.save();
+      
+      // Log logout event
+      if (req.user && stored.user) {
+        await userService.logEvent(stored.user._id, 'LOGOUT', {}, req.ip, req.get('user-agent'));
+      }
     }
     return res.json({ ok: true });
   } catch (err) {
