@@ -10,6 +10,7 @@ const userRoutes = require('./routes/users');
 const clientRoutes = require('./routes/clients');
 const reportRoutes = require('./routes/reports');
 const roleRoutes = require('./routes/roles');
+const applicationRoutes = require('./routes/applications');
 const { errorHandler } = require('./middlewares/errorHandler');
 
 const app = express();
@@ -22,6 +23,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/clients', clientRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/roles', roleRoutes);
+app.use('/api/applications', applicationRoutes);
 
 app.use(errorHandler);
 
