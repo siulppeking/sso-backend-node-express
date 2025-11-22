@@ -5,6 +5,7 @@ const tokenService = require('../services/tokenService');
 const emailService = require('../services/emailService');
 const passwordResetService = require('../services/passwordResetService');
 const emailVerificationService = require('../services/emailVerificationService');
+const twoFactorService = require('../services/twoFactorService');
 const User = require('../models/User');
 
 async function register(req, res, next) {
@@ -192,4 +193,87 @@ async function resendVerificationEmail(req, res, next) {
   }
 }
 
-module.exports = { register, login, refresh, logout, forgotPassword, resetPassword, verifyEmail, resendVerificationEmail };
+async function setupTwoFactor(req, res, next) {
+  try {
+    const userId = req.user.sub;
+    const result = await twoFactorService.enableTwoFactor(userId);
+    if (!result) return res.status(404).json({ message: 'User not found' });
+    
+    return res.json({ 
+      secret: result.secret,
+      qrCode: result.qrCode,
+      manualEntryKey: result.manualEntryKey,
+      backupCodes: result.backupCodes,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function confirmTwoFactor(req, res, next) {
+  try {
+    const userId = req.user.sub;
+    const { token, secret, backupCodes } = req.body;
+    
+    if (!token || !secret || !backupCodes) {
+      return res.status(400).json({ message: 'token, secret, and backupCodes are required' });
+    }
+
+    const user = await twoFactorService.confirmTwoFactor(userId, token, secret, backupCodes);
+    if (!user) return res.status(401).json({ message: 'Invalid 2FA token' });
+
+    return res.json({ message: 'Two-factor authentication enabled' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function disableTwoFactor(req, res, next) {
+  try {
+    const userId = req.user.sub;
+    const user = await twoFactorService.disableTwoFactor(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    return res.json({ message: 'Two-factor authentication disabled' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function verifyTwoFactorToken(req, res, next) {
+  try {
+    const userId = req.user.sub;
+    const { token } = req.body;
+    
+    if (!token) return res.status(400).json({ message: 'token is required' });
+
+    // Try TOTP token first
+    let verified = await twoFactorService.verifyTwoFactorToken(userId, token);
+    
+    // Try backup code if TOTP fails
+    if (!verified) {
+      verified = await twoFactorService.verifyBackupCode(userId, token);
+    }
+
+    if (!verified) return res.status(401).json({ message: 'Invalid 2FA token' });
+
+    return res.json({ message: '2FA token verified' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { 
+  register, 
+  login, 
+  refresh, 
+  logout, 
+  forgotPassword, 
+  resetPassword, 
+  verifyEmail, 
+  resendVerificationEmail,
+  setupTwoFactor,
+  confirmTwoFactor,
+  disableTwoFactor,
+  verifyTwoFactorToken,
+};
