@@ -3,6 +3,7 @@ const userService = require('../services/userService');
 const clientService = require('../services/clientService');
 const tokenService = require('../services/tokenService');
 const emailService = require('../services/emailService');
+const passwordResetService = require('../services/passwordResetService');
 const User = require('../models/User');
 
 async function register(req, res, next) {
@@ -111,4 +112,41 @@ async function logout(req, res, next) {
   }
 }
 
-module.exports = { register, login, refresh, logout };
+async function forgotPassword(req, res, next) {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: 'email is required' });
+
+    const result = await passwordResetService.generateResetToken(email);
+    
+    // Always return success to prevent email enumeration
+    if (!result) {
+      return res.json({ message: 'If email exists, a reset link has been sent' });
+    }
+
+    if (!result.sent) {
+      return res.status(500).json({ message: 'Failed to send reset email' });
+    }
+
+    return res.json({ message: 'Password reset link sent to email' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function resetPassword(req, res, next) {
+  try {
+    const { token, password } = req.body;
+    if (!token) return res.status(400).json({ message: 'token is required' });
+    if (!password || password.length < 6) return res.status(400).json({ message: 'password must be at least 6 characters' });
+
+    const user = await passwordResetService.resetPassword(token, password);
+    if (!user) return res.status(401).json({ message: 'Invalid or expired reset token' });
+
+    return res.json({ message: 'Password reset successfully' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { register, login, refresh, logout, forgotPassword, resetPassword };
