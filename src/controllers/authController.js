@@ -4,6 +4,7 @@ const clientService = require('../services/clientService');
 const tokenService = require('../services/tokenService');
 const emailService = require('../services/emailService');
 const passwordResetService = require('../services/passwordResetService');
+const emailVerificationService = require('../services/emailVerificationService');
 const User = require('../models/User');
 
 async function register(req, res, next) {
@@ -149,4 +150,46 @@ async function resetPassword(req, res, next) {
   }
 }
 
-module.exports = { register, login, refresh, logout, forgotPassword, resetPassword };
+async function verifyEmail(req, res, next) {
+  try {
+    const { token } = req.body;
+    if (!token) return res.status(400).json({ message: 'token is required' });
+
+    const user = await emailVerificationService.confirmEmailVerification(token);
+    if (!user) return res.status(401).json({ message: 'Invalid or expired verification token' });
+
+    return res.json({ message: 'Email verified successfully' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function resendVerificationEmail(req, res, next) {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: 'email is required' });
+
+    const user = await userService.findByEmail(email);
+    
+    // Always return success to prevent email enumeration
+    if (!user) {
+      return res.json({ message: 'If email exists, verification link has been sent' });
+    }
+
+    if (user.emailVerified) {
+      return res.json({ message: 'Email already verified' });
+    }
+
+    const result = await emailVerificationService.generateVerificationToken(user._id);
+    
+    if (!result || !result.sent) {
+      return res.status(500).json({ message: 'Failed to send verification email' });
+    }
+
+    return res.json({ message: 'Verification email sent' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { register, login, refresh, logout, forgotPassword, resetPassword, verifyEmail, resendVerificationEmail };
