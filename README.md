@@ -116,6 +116,35 @@ Contribuir
 
 Licencia
 - MIT (ajusta según necesites).
+ 
+Two-Factor Authentication (2FA)
+-------------------------------
+
+Este proyecto incluye soporte para 2FA basado en TOTP (Time-based One-Time Password).
+
+- Flujo básico:
+  1. `POST /api/auth/2fa/setup` (usuario autenticado) — devuelve `qrCode` (data URL) y `manualEntryKey`.
+  2. Escanea el `qrCode` con una app TOTP (Google Authenticator, Authy, etc.).
+  3. `POST /api/auth/2fa/confirm` (usuario autenticado) — enviar `{ token, secret, backupCodes }` para confirmar.
+  4. Para verificar, usar `POST /api/auth/2fa/verify` con el token TOTP o un backup code.
+
+- Se generan `backupCodes` (códigos de un solo uso) al habilitar 2FA; guárdalos de forma segura.
+
+Verificación de email
+---------------------
+
+Al registrarse, se envía automáticamente un email de verificación con un token válido por 24 horas.
+
+- Endpoints:
+  - `POST /api/auth/verify-email` — { token }
+  - `POST /api/auth/resend-verification-email` — { email }
+
+Seguridad
+--------
+
+- En producción configura `SMTP_*`, `APP_URL`, `JWT_SECRET` y `MONGO_URI` en tu `.env`.
+- Las respuestas a las rutas de reenvío/verificación están diseñadas para evitar enumeración de emails.
+
 SSO Backend (Node.js + Express + MongoDB)
 
 Minimal Single Sign-On (SSO) server inspired by Keycloak concepts. Implements:
