@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const morgan = require('morgan');
+const { requestLogger } = require('./middlewares/requestLogger');
 
 const { connectDB } = require('./config/db');
 const authRoutes = require('./routes/auth');
@@ -21,6 +22,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(morgan('dev'));
+app.use(requestLogger);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
