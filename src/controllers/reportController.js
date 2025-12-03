@@ -59,6 +59,12 @@ async function deleteReport(req, res, next) {
     const { id } = req.params;
     const doc = await Report.findById(id);
     if (!doc) return res.status(404).json({ message: 'Report not found' });
+    // Allow deletion by owner or by admin
+    const requester = req.user;
+    const isOwner = requester && doc.owner && doc.owner.toString() === requester.sub;
+    const isAdmin = requester && requester.roles && requester.roles.includes('admin');
+    if (!isOwner && !isAdmin) return res.status(403).json({ message: 'Not allowed to delete this report' });
+
     await doc.remove();
     res.json({ ok: true });
   } catch (err) {
