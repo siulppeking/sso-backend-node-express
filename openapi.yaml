@@ -1,0 +1,29 @@
+openapi: 3.0.0
+info:
+  title: SSO Backend API
+  version: 1.0.0
+servers:
+  - url: http://localhost:4000
+paths:
+  /api/auth/login:
+    post:
+      summary: Login
+  /api/auth/register:
+    post:
+      summary: Register user
+  /api/auth/forgot-password:
+    post:
+      summary: Request password reset
+  /api/auth/reset-password:
+    post:
+      summary: Reset password
+  /api/reports:
+    get:
+      summary: List reports
+    post:
+      summary: Create report
+  /api/reports/{id}:
+    get:
+      summary: Get report
+    delete:
+      summary: Delete report
