@@ -289,6 +289,9 @@ async function removeUserFromGroup(userId, groupId) {
 async function addRole(userId, role) {
   const user = await User.findById(userId);
   if (!user) return null;
+  const allowedRoles = ['user', 'admin', 'REPORT'];
+  if (!allowedRoles.includes(role)) return null;
+
   if (!user.roles.includes(role)) {
     user.roles.push(role);
     await user.save();
