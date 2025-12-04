@@ -173,6 +173,40 @@ npm install
 npm run dev
 ```
 
+## 🚀 Ejecutar localmente
+
+### 1. Verifica las variables de entorno
+
+```bash
+npm run check:env
+```
+
+Este comando te dirá qué variables faltan en tu `.env`.
+
+### 2. Inicia el servidor
+
+```bash
+# Modo desarrollo (con nodemon)
+npm run dev
+
+# Modo producción
+npm start
+```
+
+### 3. Verifica que el servidor esté corriendo
+
+```bash
+bash scripts/healthcheck.sh
+```
+
+## Scripts disponibles
+
+- `npm run dev` - Inicia el servidor con nodemon (auto-reload)
+- `npm start` - Inicia el servidor en modo producción
+- `npm run check:env` - Valida las variables de entorno
+- `npm test` - Ejecuta tests (placeholder por ahora)
+- `npm run lint` - Ejecuta linter (placeholder por ahora)
+
 API (important endpoints)
 
 - POST `/api/auth/register` { username, email, password }
@@ -185,3 +219,4 @@ API (important endpoints)
 Notes
 - Client registration returns the `clientSecret` only once. Keep it safe.
 - Refresh tokens are stored and can be revoked/rotated.
+- **No CI/CD**: Este proyecto no usa CI/CD automatizado. Ver [docs/NO_CI.md](docs/NO_CI.md) para más información.
