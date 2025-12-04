@@ -9,7 +9,8 @@
     "test": "node -e \"console.log('No tests configured')\"",
     "lint": "node -e \"console.log('No linter configured yet')\"",
     "check:env": "node scripts/check-env.js",
-    "seed:admin": "node scripts/seed-admin.js"
+    "seed:admin": "node scripts/seed-admin.js",
+    "logs": "tail -f logs/combined.log logs/error.log"
   },
   "keywords": [],
   "author": "",
