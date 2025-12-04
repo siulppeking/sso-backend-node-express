@@ -8,7 +8,8 @@
     "dev": "nodemon src/index.js",
     "test": "node -e \"console.log('No tests configured')\"",
     "lint": "node -e \"console.log('No linter configured yet')\"",
-    "check:env": "node scripts/check-env.js"
+    "check:env": "node scripts/check-env.js",
+    "seed:admin": "node scripts/seed-admin.js"
   },
   "keywords": [],
   "author": "",
