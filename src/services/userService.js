@@ -1,9 +1,27 @@
 const crypto = require('crypto');
 const User = require('../models/User');
 const Event = require('../models/Event');
+const { logger } = require('../utils/logger');
+const { ALLOWED_ROLES } = require('../constants');
 
-// User CRUD operations
-async function createUser({ username, email, password, firstName = '', lastName = '', roles = ['user'], attributes = {} }) {
+/**
+ * ============================================================================
+ * USER CRUD OPERATIONS
+ * ============================================================================
+ */
+
+/**
+ * Create a new user
+ */
+async function createUser({
+  username,
+  email,
+  password,
+  firstName = '',
+  lastName = '',
+  roles = ['user'],
+  attributes = {},
+}) {
   const user = new User({
     username,
     email,
@@ -14,24 +32,34 @@ async function createUser({ username, email, password, firstName = '', lastName 
     attributes,
   });
   await user.save();
-  
+
   await logEvent(user._id, 'USER_CREATE', {
     username,
     email,
     roles: roles.join(','),
   });
-  
+
+  logger.info('User created', { userId: user._id, username });
   return user;
 }
 
+/**
+ * Find user by email
+ */
 function findByEmail(email) {
   return User.findOne({ email }).populate('groups');
 }
 
+/**
+ * Find user by ID
+ */
 function findById(id) {
   return User.findById(id).populate('groups').populate('applications.applicationId');
 }
 
+/**
+ * Find user by username
+ */
 function findByUsername(username) {
   return User.findOne({ username }).populate('groups');
 }
