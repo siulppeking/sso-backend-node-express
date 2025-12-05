@@ -204,8 +204,65 @@ bash scripts/healthcheck.sh
 - `npm run dev` - Inicia el servidor con nodemon (auto-reload)
 - `npm start` - Inicia el servidor en modo producción
 - `npm run check:env` - Valida las variables de entorno
+- `npm run seed:admin` - Crea usuario admin inicial
+- `npm run logs` - Visualiza logs en tiempo real
 - `npm test` - Ejecuta tests (placeholder por ahora)
 - `npm run lint` - Ejecuta linter (placeholder por ahora)
+
+## Documentación
+
+- **[API Examples](docs/API_EXAMPLES.md)** - Ejemplos curl para todos los endpoints
+- **[Architecture](docs/ARCHITECTURE.md)** - Explicación del diseño del sistema
+- **[Deployment](docs/DEPLOYMENT.md)** - Guía para deployment en producción
+- **[Security](docs/SECURITY.md)** - Políticas de seguridad
+- **[Contributing](docs/CONTRIBUTING.md)** - Cómo contribuir al proyecto
+- **[Changelog](CHANGELOG.md)** - Historial de cambios y versiones
+- **[No CI/CD](docs/NO_CI.md)** - Información sobre desarrollo local
+
+## Estado del proyecto
+
+✅ **v1.0.0** - Versión inicial estable
+
+### Características implementadas
+- ✅ Autenticación con JWT + Refresh Tokens
+- ✅ Gestión de usuarios y roles
+- ✅ Two-Factor Authentication (2FA) con TOTP
+- ✅ Verificación de email
+- ✅ Reset de password
+- ✅ Gestión de clientes OAuth2
+- ✅ Sistema de reportes con permisos
+- ✅ Logging estructurado con Winston
+- ✅ Middlewares de autenticación y autorización
+- ✅ Validación de inputs
+
+### Por implementar
+- 🔄 Suite completa de tests (Jest/Mocha)
+- 🔄 Rate limiting
+- 🔄 OAuth2 Authorization Code Flow completo
+- 🔄 Scopes y permisos granulares
+- 🔄 Admin dashboard
+- 🔄 Monitoreo con Prometheus
+
+## Seguridad
+
+⚠️ **Producción**: Antes de desplegar en producción, revisa [docs/SECURITY.md](docs/SECURITY.md) y [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+
+Medidas implementadas:
+- Passwords hasheados con bcrypt
+- JWT con secretos fuertes
+- Refresh tokens con rotación
+- 2FA con TOTP y códigos backup
+- Validación de inputs
+- Logs estructurados
+- Protección contra enumeración de emails
+
+## Generación de secretos
+
+```bash
+bash scripts/generate-secrets.sh
+```
+
+Este script genera secretos fuertes para `JWT_SECRET` y `JWT_REFRESH_SECRET`.
 
 API (important endpoints)
 
@@ -220,3 +277,8 @@ Notes
 - Client registration returns the `clientSecret` only once. Keep it safe.
 - Refresh tokens are stored and can be revoked/rotated.
 - **No CI/CD**: Este proyecto no usa CI/CD automatizado. Ver [docs/NO_CI.md](docs/NO_CI.md) para más información.
+
+## Licencia
+
+MIT - Ver [LICENSE](LICENSE) para más detalles.
+
